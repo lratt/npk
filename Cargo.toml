@@ -1,0 +1,12 @@
+[package]
+name = "pkg-nvim"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+git2 = "0.14.3"
+serde = { version = "1.0.137", features = ["derive"] }
+toml = "0.5.9"
+ureq = "2.4.0"
