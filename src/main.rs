@@ -4,11 +4,12 @@ use anyhow::Context;
 extern crate serde;
 
 mod config;
+mod installer;
 
 fn main() -> anyhow::Result<()> {
     let config = config::read_config().context("failed to read config file")?;
 
-    dbg!(config);
+    installer::Installer::new(config).clone_repos()?;
 
     Ok(())
 }
