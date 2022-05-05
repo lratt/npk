@@ -1,12 +1,14 @@
+use anyhow::Context;
+
 #[macro_use]
 extern crate serde;
-#[macro_use]
-extern crate thiserror;
 
 mod config;
 
-fn main() {
-    let config = config::read_config().unwrap();
+fn main() -> anyhow::Result<()> {
+    let config = config::read_config().context("failed to read config file")?;
 
     dbg!(config);
+
+    Ok(())
 }

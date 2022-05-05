@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use anyhow::Result;
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
@@ -11,14 +12,6 @@ pub struct PackageAuthorConfig {
     pub repo: Option<String>,
 }
 
-#[derive(Debug, Error)]
-pub enum ConfigError {
-    #[error("an io error occured: {0}")]
-    IoError(std::io::Error),
-    #[error("toml deserialize error: {0}")]
-    TomlDeserializeError(toml::de::Error),
-}
-
 #[derive(Debug, Deserialize)]
 pub enum PackageConfig {
     Basic(String),
@@ -27,7 +20,7 @@ pub enum PackageConfig {
     // }
 }
 
-pub fn read_config() -> Result<Config, ConfigError> {
-    let cfg_bytes = std::fs::read("config.toml").map_err(ConfigError::IoError)?;
-    toml::de::from_slice(&cfg_bytes).map_err(ConfigError::TomlDeserializeError)
+pub fn read_config() -> Result<Config> {
+    let cfg_bytes = std::fs::read("config.toml")?;
+    Ok(toml::de::from_slice(&cfg_bytes)?)
 }
