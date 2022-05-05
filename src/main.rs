@@ -17,7 +17,7 @@ fn print_usage() {
 
 COMMANDS:
     install, i    installs all new packages
-    update, u     updates current packages
+    upgrade, u     updates current packages
     help, h       prints this message
 ",
         PKG_NAME
@@ -37,7 +37,7 @@ fn main() -> anyhow::Result<()> {
     let installer = installer::Installer::new(config);
     match &cmd[..] {
         "i" | "install" => installer.clone_repos()?,
-        "u" | "update" => unimplemented!(),
+        "u" | "upgrade" => unimplemented!(),
         "h" | "help" => print_usage(),
         _ => {
             println!("invalid command");
