@@ -1,5 +1,4 @@
 use anyhow::{Context, Result};
-use std::io::Write;
 use std::path::Path;
 
 use crate::config::{Config, PackageAuthorConfig, PackageConfig};
@@ -41,7 +40,6 @@ impl Installer {
         let repo_path = into.as_ref().join(PKG_NAME).join("start").join(repo);
 
         println!("Cloning {}", &repo_url);
-        std::io::stdout().flush().unwrap();
         git2::build::RepoBuilder::new()
             .clone(&repo_url, &repo_path)
             .context("failed to clone repository")?;
