@@ -2,8 +2,7 @@ use anyhow::{Context, Result};
 use std::path::Path;
 
 use crate::config::{Config, PackageAuthor};
-
-const PKG_NAME: &str = env!("CARGO_PKG_NAME");
+use crate::PKG_NAME;
 
 #[derive(Debug)]
 pub struct Installer {
