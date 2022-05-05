@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use anyhow::Result;
+use std::collections::HashMap;
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
