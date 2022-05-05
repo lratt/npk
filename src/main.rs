@@ -1,3 +1,5 @@
+#![warn(clippy::pedantic)]
+
 use anyhow::Context;
 
 #[macro_use]
@@ -7,7 +9,7 @@ mod config;
 mod installer;
 
 fn main() -> anyhow::Result<()> {
-    let config = config::read_config().context("failed to read config file")?;
+    let config = config::read().context("failed to read config file")?;
 
     installer::Installer::new(config).clone_repos()?;
 
