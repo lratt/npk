@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use std::path::PathBuf;
 
-use crate::config::{Config, PackageAuthor};
+use crate::config::{Config, Package};
 use crate::PKG_NAME;
 
 #[derive(Debug)]
@@ -21,7 +21,7 @@ impl Installer {
     pub fn clone_repo(
         &self,
         author: &str,
-        (repo_name, cfg): (&String, &PackageAuthor),
+        (repo_name, _cfg): (&String, &Package),
     ) -> Result<()> {
         let repo_path = self.pack_dir.join(PKG_NAME).join("start").join(repo_name);
         match git2::Repository::open(&repo_path) {
@@ -30,10 +30,7 @@ impl Installer {
             Ok(_) => return Ok(()),
         }
 
-        let repo_url = cfg
-            .repo
-            .clone()
-            .unwrap_or_else(|| format!("https://github.com/{}/{}", author, repo_name));
+        let repo_url = format!("https://github.com/{}/{}", author, repo_name);
 
         println!("Cloning {}", &repo_url);
         git2::build::RepoBuilder::new()
@@ -47,7 +44,7 @@ impl Installer {
     pub fn pull_repo(
         &self,
         author: &str,
-        (repo_name, _cfg): (&String, &PackageAuthor),
+        (repo_name, _cfg): (&String, &Package),
     ) -> Result<()> {
         let repo_path = self.pack_dir.join(PKG_NAME).join("start").join(repo_name);
         let repo = match git2::Repository::open(&repo_path) {
