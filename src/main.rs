@@ -37,7 +37,7 @@ fn main() -> anyhow::Result<()> {
     let installer = installer::Installer::new(config);
     match &cmd[..] {
         "i" | "install" => installer.install()?,
-        "u" | "upgrade" => unimplemented!(),
+        "u" | "upgrade" => installer.upgrade()?,
         "h" | "help" => print_usage(),
         _ => {
             println!("invalid command");
