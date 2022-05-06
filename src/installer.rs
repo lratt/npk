@@ -39,7 +39,7 @@ impl Installer {
     pub fn new(config: Config) -> Self {
         Self { config }
     }
-    pub fn clone_repos(&self) -> Result<()> {
+    pub fn install(&self) -> Result<()> {
         let data_dir = home::home_dir()
             .map(|d| d.join(".local/share/nvim/site/pack"))
             .unwrap();

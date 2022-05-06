@@ -36,7 +36,7 @@ fn main() -> anyhow::Result<()> {
 
     let installer = installer::Installer::new(config);
     match &cmd[..] {
-        "i" | "install" => installer.clone_repos()?,
+        "i" | "install" => installer.install()?,
         "u" | "upgrade" => unimplemented!(),
         "h" | "help" => print_usage(),
         _ => {
