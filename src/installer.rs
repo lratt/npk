@@ -18,11 +18,7 @@ impl Installer {
 
         Self { config, pack_dir }
     }
-    pub fn clone_repo(
-        &self,
-        author: &str,
-        (repo_name, _cfg): (&String, &Package),
-    ) -> Result<()> {
+    pub fn clone_repo(&self, author: &str, (repo_name, _cfg): (&String, &Package)) -> Result<()> {
         let repo_path = self.pack_dir.join(PKG_NAME).join("start").join(repo_name);
         match git2::Repository::open(&repo_path) {
             Err(e) if e.code() == git2::ErrorCode::NotFound => {}
@@ -41,11 +37,7 @@ impl Installer {
         Ok(())
     }
 
-    pub fn pull_repo(
-        &self,
-        author: &str,
-        (repo_name, _cfg): (&String, &Package),
-    ) -> Result<()> {
+    pub fn pull_repo(&self, author: &str, (repo_name, _cfg): (&String, &Package)) -> Result<()> {
         let repo_path = self.pack_dir.join(PKG_NAME).join("start").join(repo_name);
         let repo = match git2::Repository::open(&repo_path) {
             Err(e) if e.code() == git2::ErrorCode::NotFound => return Ok(()),
@@ -54,7 +46,6 @@ impl Installer {
         };
 
         let mut remote = repo.find_remote("origin")?;
-
 
         println!("Updating {}/{}", &author, &repo_name);
         for branch in repo.branches(None)? {
