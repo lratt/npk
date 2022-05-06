@@ -1,2 +1,10 @@
 [pkg]
 neovim = { nvim-lspconfig = {} }
+williamboman = { nvim-lsp-installer = {} }
+vijaymarupudi = { nvim-fzf = {}, nvim-fzf-commands = {} }
+simrat39 = { "rust-tools.nvim" = {} }
+rust-lang = { "rust.vim" = {} }
+cespare = { vim-toml = {} }
+hrsh7th = { nvim-compe = {}, vim-vsnip = {} }
+nvim-treesitter = { nvim-treesitter = {} }
+wadackel = { vim-dogrun = {} }
