@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use crate::config::{Config, PackageAuthor};
 use crate::PKG_NAME;
@@ -47,7 +47,7 @@ impl Installer {
     pub fn pull_repo(
         &self,
         author: &str,
-        (repo_name, cfg): (&String, &PackageAuthor),
+        (repo_name, _cfg): (&String, &PackageAuthor),
     ) -> Result<()> {
         let repo_path = self.pack_dir.join(PKG_NAME).join("start").join(repo_name);
         let repo = match git2::Repository::open(&repo_path) {
