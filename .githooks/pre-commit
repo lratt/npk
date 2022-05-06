@@ -1,0 +1,25 @@
+#!/bin/bash
+
+run_tests() {
+	cargo test -q 2>&1
+	return $?
+}
+
+check_style() {
+	cargo fmt -- --check 2>/dev/null
+	return $?
+}
+
+git stash -q --keep-index # stash unstaged changes
+
+check_style
+RESULT=$?
+[ $RESULT -ne 0 ] && echo "staged files not formatted. run \`cargo fmt\` to format them." && exit 1
+
+run_tests
+RESULT=$?
+[ $RESULT -ne 0 ] && echo "tests failed" && exit 1
+
+git stash pop -q # pop stashed changes
+
+exit 0
