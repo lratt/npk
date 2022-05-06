@@ -98,7 +98,7 @@ impl Installer {
     {
         for (author, pkgs) in &self.config.packages {
             for pkg in pkgs {
-                f(&self, author, pkg)?;
+                f(self, author, pkg)?;
             }
         }
 
