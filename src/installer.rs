@@ -92,19 +92,13 @@ impl Installer {
         Ok(())
     }
 
-    pub fn install(&self) -> Result<()> {
+    pub fn all_repos<F>(&self, f: F) -> Result<()>
+    where
+        F: Fn(&Self, &str, (&String, &Package)) -> Result<()>,
+    {
         for (author, pkgs) in &self.config.packages {
             for pkg in pkgs {
-                self.clone_repo(author, pkg)?;
-            }
-        }
-
-        Ok(())
-    }
-    pub fn upgrade(&self) -> Result<()> {
-        for (author, pkgs) in &self.config.packages {
-            for pkg in pkgs {
-                self.pull_repo(author, pkg)?;
+                f(&self, author, pkg)?;
             }
         }
 

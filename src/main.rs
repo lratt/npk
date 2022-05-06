@@ -1,6 +1,7 @@
 #![warn(clippy::pedantic)]
 
 use anyhow::Context;
+use installer::Installer;
 
 #[macro_use]
 extern crate serde;
@@ -34,10 +35,10 @@ fn main() -> anyhow::Result<()> {
 
     let config = config::read().context("failed to read config file")?;
 
-    let installer = installer::Installer::new(config);
+    let installer = Installer::new(config);
     match &cmd[..] {
-        "i" | "install" => installer.install()?,
-        "u" | "upgrade" => installer.upgrade()?,
+        "i" | "install" => installer.all_repos(Installer::clone_repo)?,
+        "u" | "upgrade" => installer.all_repos(Installer::pull_repo)?,
         "h" | "help" => print_usage(),
         _ => {
             println!("invalid command");
