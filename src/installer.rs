@@ -10,31 +10,6 @@ pub struct Installer {
     pack_dir: PathBuf,
 }
 
-pub fn clone_repo<P: AsRef<Path>>(
-    author: &str,
-    (repo, cfg): (&String, &PackageAuthor),
-    into: P,
-) -> Result<()> {
-    let repo_path = into.as_ref().join(PKG_NAME).join("start").join(repo);
-    match git2::Repository::open(&repo_path) {
-        Err(e) if e.code() == git2::ErrorCode::NotFound => {}
-        Err(e) => return Err(e.into()),
-        Ok(_) => return Ok(()),
-    }
-
-    let repo_url = cfg
-        .repo
-        .clone()
-        .unwrap_or_else(|| format!("https://github.com/{}/{}", author, repo));
-
-    println!("Cloning {}", &repo_url);
-    git2::build::RepoBuilder::new()
-        .clone(&repo_url, &repo_path)
-        .context("failed to clone repository")?;
-    println!("Cloned {}", &repo_url);
-
-    Ok(())
-}
 
 impl Installer {
     pub fn new(config: Config) -> Self {
@@ -44,10 +19,35 @@ impl Installer {
 
         Self { config, pack_dir }
     }
+    pub fn clone_repo(
+        &self,
+        author: &str,
+        (repo, cfg): (&String, &PackageAuthor),
+    ) -> Result<()> {
+        let repo_path = self.pack_dir.join(PKG_NAME).join("start").join(repo);
+        match git2::Repository::open(&repo_path) {
+            Err(e) if e.code() == git2::ErrorCode::NotFound => {}
+            Err(e) => return Err(e.into()),
+            Ok(_) => return Ok(()),
+        }
+
+        let repo_url = cfg
+            .repo
+            .clone()
+            .unwrap_or_else(|| format!("https://github.com/{}/{}", author, repo));
+
+        println!("Cloning {}", &repo_url);
+        git2::build::RepoBuilder::new()
+            .clone(&repo_url, &repo_path)
+            .context("failed to clone repository")?;
+        println!("Cloned {}", &repo_url);
+
+        Ok(())
+    }
     pub fn install(&self) -> Result<()> {
         for (author, pkgs) in &self.config.packages {
             for pkg in pkgs {
-                clone_repo(author, pkg, &self.pack_dir)?;
+                self.clone_repo(author, pkg)?;
             }
         }
 
