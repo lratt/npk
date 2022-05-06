@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::config::{Config, PackageAuthor};
 use crate::PKG_NAME;
@@ -7,6 +7,7 @@ use crate::PKG_NAME;
 #[derive(Debug)]
 pub struct Installer {
     config: Config,
+    pack_dir: PathBuf,
 }
 
 pub fn clone_repo<P: AsRef<Path>>(
@@ -37,16 +38,16 @@ pub fn clone_repo<P: AsRef<Path>>(
 
 impl Installer {
     pub fn new(config: Config) -> Self {
-        Self { config }
-    }
-    pub fn install(&self) -> Result<()> {
-        let data_dir = home::home_dir()
+        let pack_dir = home::home_dir()
             .map(|d| d.join(".local/share/nvim/site/pack"))
             .unwrap();
 
+        Self { config, pack_dir }
+    }
+    pub fn install(&self) -> Result<()> {
         for (author, pkgs) in &self.config.packages {
             for pkg in pkgs {
-                clone_repo(author, pkg, &data_dir)?;
+                clone_repo(author, pkg, &self.pack_dir)?;
             }
         }
 
