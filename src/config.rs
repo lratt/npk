@@ -8,7 +8,9 @@ pub struct Config {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Package {}
+pub struct Package {
+    pub rename: Option<String>,
+}
 
 pub fn read() -> Result<Config> {
     let cfg_bytes = std::fs::read("config.toml")?;

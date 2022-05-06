@@ -18,8 +18,12 @@ impl Installer {
 
         Self { config, pack_dir }
     }
-    pub fn clone_repo(&self, author: &str, (repo_name, _cfg): (&String, &Package)) -> Result<()> {
-        let repo_path = self.pack_dir.join(PKG_NAME).join("start").join(repo_name);
+    pub fn clone_repo(&self, author: &str, (repo_name, cfg): (&String, &Package)) -> Result<()> {
+        let repo_path = self
+            .pack_dir
+            .join(PKG_NAME)
+            .join("start")
+            .join(cfg.rename.as_ref().unwrap_or(repo_name));
         match git2::Repository::open(&repo_path) {
             Err(e) if e.code() == git2::ErrorCode::NotFound => {}
             Err(e) => return Err(e.into()),
@@ -28,7 +32,11 @@ impl Installer {
 
         let repo_url = format!("https://github.com/{}/{}", author, repo_name);
 
-        println!("Cloning {}", &repo_url);
+        if let Some(rename_to) = &cfg.rename {
+            println!("Cloning {} to {}", &repo_url, &rename_to);
+        } else {
+            println!("Cloning {}", &repo_url);
+        }
         git2::build::RepoBuilder::new()
             .clone(&repo_url, &repo_path)
             .context("failed to clone repository")?;
@@ -37,8 +45,12 @@ impl Installer {
         Ok(())
     }
 
-    pub fn pull_repo(&self, author: &str, (repo_name, _cfg): (&String, &Package)) -> Result<()> {
-        let repo_path = self.pack_dir.join(PKG_NAME).join("start").join(repo_name);
+    pub fn pull_repo(&self, author: &str, (repo_name, cfg): (&String, &Package)) -> Result<()> {
+        let repo_path = self
+            .pack_dir
+            .join(PKG_NAME)
+            .join("start")
+            .join(cfg.rename.as_ref().unwrap_or(repo_name));
         let repo = match git2::Repository::open(&repo_path) {
             Err(e) if e.code() == git2::ErrorCode::NotFound => return Ok(()),
             Err(e) => return Err(e.into()),
