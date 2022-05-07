@@ -22,7 +22,7 @@ fn main() -> anyhow::Result<()> {
         .arg_required_else_help(true)
         .args(&[arg!(
             -c --config <CONFIG_FILE> "path to configuration file [default: $HOME/.config/pkg-nvim.toml]"
-        ).required(false)])
+        ).allow_invalid_utf8(true).required(false)])
         .subcommands(vec![
             clap::Command::new("install").about("installs all new packages").visible_alias("i")
                 .args(&[arg!(-u --upgrade "upgrade existing packages").required(false)]),
