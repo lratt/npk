@@ -1,29 +1,15 @@
 #!/bin/sh
 
-run_tests() {
-	cargo test -q 2>&1
-	return $?
-}
+if ! cargo fmt -- --check 2>/dev/null; then
+    echo "staged files not formatted. run \`cargo fmt\` to format them." && exit 1
+fi
 
-check_style() {
-	cargo fmt -- --check 2>/dev/null
-	return $?
-}
+if ! cargo clippy --color always -- -D warnings; then
+    echo "clippy failed" && exit 1
+fi
 
-git stash -q --keep-index # stash unstaged changes
-
-check_style
-RESULT=$?
-[ $RESULT -ne 0 ] && echo "staged files not formatted. run \`cargo fmt\` to format them." && exit 1
-
-cargo clippy --color always -- -D warnings
-RESULT=$?
-[ $RESULT -ne 0 ] && echo "clippy failed" && exit 1
-
-run_tests
-RESULT=$?
-[ $RESULT -ne 0 ] && echo "tests failed" && exit 1
-
-git stash pop -q # pop stashed changes
+if ! cargo test -q 2>&1; then
+    echo "tests failed" && exit 1
+fi
 
 exit 0
