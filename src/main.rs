@@ -31,7 +31,7 @@ fn main() -> anyhow::Result<()> {
         .get_matches();
 
     let config_path = matches.value_of_os("config").map_or_else(
-        || home::home_dir().unwrap().join(".config/pkg-nvim.toml"),
+        || home::home_dir().unwrap().join(".config/npk.yml"),
         PathBuf::from,
     );
 
