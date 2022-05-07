@@ -11,3 +11,8 @@ packages:
   hrsh7th/vim-vsnip: {}
   nvim-treesitter/nvim-treesitter: {}
   wadackel/vim-dogrun: {}
+
+  # example with a different host
+  # lratt/dev_tools/cool_nvim_plugin:
+  #   # NOTE: trailing slashes in host urls are removed!
+  #   host: https://git.example.com/

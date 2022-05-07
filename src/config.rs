@@ -10,6 +10,7 @@ pub struct Config {
 #[derive(Debug, Deserialize)]
 pub struct Package {
     pub rename: Option<String>,
+    pub host: Option<String>,
 }
 
 pub fn read<P: AsRef<Path>>(path: P) -> Result<Config> {

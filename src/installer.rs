@@ -49,7 +49,11 @@ impl Installer {
             println!("Cloning {}", &remote_path);
         }
 
-        let remote_url = format!("https://github.com/{}", remote_path);
+        let remote_url = cfg
+            .host
+            .as_ref()
+            .map(|s| format!("{}/{}", s.trim_matches('/'), &remote_path))
+            .unwrap_or(format!("https://github.com/{}", &remote_path));
         git2::build::RepoBuilder::new()
             .clone(&remote_url, &repo_path)
             .context("failed to clone repository")?;
