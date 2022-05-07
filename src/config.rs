@@ -1,5 +1,6 @@
 use anyhow::Result;
 use std::collections::HashMap;
+use std::path::Path;
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
@@ -12,7 +13,7 @@ pub struct Package {
     pub rename: Option<String>,
 }
 
-pub fn read() -> Result<Config> {
-    let cfg_bytes = std::fs::read("config.toml")?;
+pub fn read<P: AsRef<Path>>(path: P) -> Result<Config> {
+    let cfg_bytes = std::fs::read(path)?;
     Ok(toml::de::from_slice(&cfg_bytes)?)
 }

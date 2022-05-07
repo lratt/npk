@@ -8,6 +8,7 @@ use crate::PKG_NAME;
 pub struct Installer {
     config: Config,
     pack_dir: PathBuf,
+    upgrade_during_install: bool,
 }
 
 impl Installer {
@@ -16,7 +17,14 @@ impl Installer {
             .map(|d| d.join(".local/share/nvim/site/pack"))
             .unwrap();
 
-        Self { config, pack_dir }
+        Self {
+            config,
+            pack_dir,
+            upgrade_during_install: false,
+        }
+    }
+    pub fn set_upgrade_during_install(&mut self, b: bool) {
+        self.upgrade_during_install = b;
     }
     pub fn clone_repo(&self, author: &str, (repo_name, cfg): (&String, &Package)) -> Result<()> {
         let repo_path = self
@@ -27,7 +35,12 @@ impl Installer {
         match git2::Repository::open(&repo_path) {
             Err(e) if e.code() == git2::ErrorCode::NotFound => {}
             Err(e) => return Err(e.into()),
-            Ok(_) => return Ok(()),
+            Ok(_) => {
+                if self.upgrade_during_install {
+                    self.pull_repo(author, (repo_name, cfg))?;
+                }
+                return Ok(());
+            }
         }
 
         let repo_url = format!("https://github.com/{}/{}", author, repo_name);
