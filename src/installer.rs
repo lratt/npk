@@ -26,44 +26,44 @@ impl Installer {
     pub fn set_upgrade_during_install(&mut self, b: bool) {
         self.upgrade_during_install = b;
     }
-    pub fn clone_repo(&self, author: &str, (repo_name, cfg): (&String, &Package)) -> Result<()> {
-        let repo_path = self
-            .pack_dir
-            .join(PKG_NAME)
-            .join("start")
-            .join(cfg.rename.as_ref().unwrap_or(repo_name));
+    pub fn clone_repo(&self, remote_path: &str, cfg: &Package) -> Result<()> {
+        let repo_path = self.pack_dir.join(PKG_NAME).join("start").join(
+            cfg.rename
+                .as_ref()
+                .unwrap_or(&remote_path.split('/').last().unwrap().to_string()),
+        );
         match git2::Repository::open(&repo_path) {
             Err(e) if e.code() == git2::ErrorCode::NotFound => {}
             Err(e) => return Err(e.into()),
             Ok(_) => {
                 if self.upgrade_during_install {
-                    self.pull_repo(author, (repo_name, cfg))?;
+                    self.pull_repo(remote_path, cfg)?;
                 }
                 return Ok(());
             }
         }
 
-        let repo_url = format!("https://github.com/{}/{}", author, repo_name);
-
         if let Some(rename_to) = &cfg.rename {
-            println!("Cloning {} to {}", &repo_url, &rename_to);
+            println!("Cloning {} to {}", &remote_path, &rename_to);
         } else {
-            println!("Cloning {}", &repo_url);
+            println!("Cloning {}", &remote_path);
         }
+
+        let remote_url = format!("https://github.com/{}", remote_path);
         git2::build::RepoBuilder::new()
-            .clone(&repo_url, &repo_path)
+            .clone(&remote_url, &repo_path)
             .context("failed to clone repository")?;
-        println!("Cloned {}", &repo_url);
+        println!("Cloned {}", &remote_path);
 
         Ok(())
     }
 
-    pub fn pull_repo(&self, author: &str, (repo_name, cfg): (&String, &Package)) -> Result<()> {
-        let repo_path = self
-            .pack_dir
-            .join(PKG_NAME)
-            .join("start")
-            .join(cfg.rename.as_ref().unwrap_or(repo_name));
+    pub fn pull_repo(&self, remote_path: &str, cfg: &Package) -> Result<()> {
+        let repo_path = self.pack_dir.join(PKG_NAME).join("start").join(
+            cfg.rename
+                .as_ref()
+                .unwrap_or(&remote_path.split('/').last().unwrap().to_string()),
+        );
         let repo = match git2::Repository::open(&repo_path) {
             Err(e) if e.code() == git2::ErrorCode::NotFound => return Ok(()),
             Err(e) => return Err(e.into()),
@@ -72,7 +72,7 @@ impl Installer {
 
         let mut remote = repo.find_remote("origin")?;
 
-        println!("Updating {}/{}", &author, &repo_name);
+        println!("Updating {}", &remote_path);
         for branch in repo.branches(None)? {
             let (branch, branch_type) = branch?;
 
@@ -93,9 +93,9 @@ impl Installer {
                     branch_head_ref.set_target(fetch_commit.id(), "fast forwarding")?;
                     println!("Fast forwarded {} to {}", &branch_name, fetch_commit.id());
                     repo.checkout_head(Some(git2::build::CheckoutBuilder::default().force()))?;
-                    println!("Updated {}/{}", &author, &repo_name);
+                    println!("Updated {}", &remote_path);
                 } else if analysis.is_up_to_date() {
-                    println!("{}/{} Already up to date", &author, &repo_name);
+                    println!("{} Already up to date", &remote_path);
                 } else {
                     unimplemented!()
                 }
@@ -107,12 +107,10 @@ impl Installer {
 
     pub fn all_repos<F>(&self, f: F) -> Result<()>
     where
-        F: Fn(&Self, &str, (&String, &Package)) -> Result<()>,
+        F: Fn(&Self, &str, &Package) -> Result<()>,
     {
-        for (author, pkgs) in &self.config.packages {
-            for pkg in pkgs {
-                f(self, author, pkg)?;
-            }
+        for (remote_path, pkg) in &self.config.packages {
+            f(self, remote_path, pkg)?;
         }
 
         Ok(())

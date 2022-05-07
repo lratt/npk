@@ -12,4 +12,4 @@ clap = { version = "3.1.17", features = ["cargo"] }
 git2 = "0.14.3"
 home = "0.5.3"
 serde = { version = "1.0.137", features = ["derive"] }
-toml = "0.5.9"
+serde_yaml = "0.8.24"
