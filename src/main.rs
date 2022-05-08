@@ -21,7 +21,7 @@ fn main() -> anyhow::Result<()> {
         .subcommand_required(true)
         .arg_required_else_help(true)
         .args(&[arg!(
-            -c --config <CONFIG_FILE> "path to configuration file [default: $HOME/.config/pkg-nvim.toml]"
+            -c --config <CONFIG_FILE> "path to configuration file [default: $HOME/.config/npk.yml]"
         ).allow_invalid_utf8(true).required(false)])
         .subcommands(vec![
             clap::Command::new("install").about("installs all new packages").visible_alias("i")
