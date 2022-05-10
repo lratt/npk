@@ -1,18 +1,21 @@
 use anyhow::{Context, Result};
+use crossbeam::channel::Sender;
+use crossbeam::thread;
 use std::path::PathBuf;
 
 use crate::config::{Config, Package};
-use crate::PKG_NAME;
+use crate::{Message, StateEvent, StateEventKind, PKG_NAME};
 
 #[derive(Debug)]
 pub struct Installer {
     config: Config,
     pack_dir: PathBuf,
     upgrade_during_install: bool,
+    sender: Sender<Message>,
 }
 
 impl Installer {
-    pub fn new(config: Config) -> Self {
+    pub fn new(config: Config, sender: Sender<Message>) -> Self {
         let pack_dir = home::home_dir()
             .map(|d| d.join(".local/share/nvim/site/pack"))
             .unwrap();
@@ -20,6 +23,7 @@ impl Installer {
         Self {
             config,
             pack_dir,
+            sender,
             upgrade_during_install: false,
         }
     }
@@ -43,11 +47,10 @@ impl Installer {
             }
         }
 
-        if let Some(rename_to) = &cfg.rename {
-            println!("Cloning {} to {}", &remote_path, &rename_to);
-        } else {
-            println!("Cloning {}", &remote_path);
-        }
+        self.sender.send(Message::StateEvent(StateEvent::new(
+            remote_path,
+            StateEventKind::Installing,
+        )))?;
 
         let remote_url = cfg
             .host
@@ -57,7 +60,11 @@ impl Installer {
         git2::build::RepoBuilder::new()
             .clone(&remote_url, &repo_path)
             .context("failed to clone repository")?;
-        println!("Cloned {}", &remote_path);
+
+        self.sender.send(Message::StateEvent(StateEvent::new(
+            remote_path,
+            StateEventKind::Installed,
+        )))?;
 
         Ok(())
     }
@@ -76,7 +83,10 @@ impl Installer {
 
         let mut remote = repo.find_remote("origin")?;
 
-        println!("Updating {}", &remote_path);
+        self.sender.send(Message::StateEvent(StateEvent::new(
+            remote_path,
+            StateEventKind::Updating,
+        )))?;
         for branch in repo.branches(None)? {
             let (branch, branch_type) = branch?;
 
@@ -93,13 +103,18 @@ impl Installer {
                     repo.merge_analysis_for_ref(&branch_head_ref, &[&fetch_commit])?;
 
                 if analysis.is_fast_forward() {
-                    println!("Fast forwarding {}...", &branch_name);
                     branch_head_ref.set_target(fetch_commit.id(), "fast forwarding")?;
-                    println!("Fast forwarded {} to {}", &branch_name, fetch_commit.id());
                     repo.checkout_head(Some(git2::build::CheckoutBuilder::default().force()))?;
-                    println!("Updated {}", &remote_path);
+                    self.sender.send(Message::StateEvent(StateEvent::new(
+                        remote_path,
+                        StateEventKind::Updated,
+                    )))?;
                 } else if analysis.is_up_to_date() {
-                    println!("{} Already up to date", &remote_path);
+                    // println!("{} Already up to date", &remote_path);
+                    self.sender.send(Message::StateEvent(StateEvent::new(
+                        remote_path,
+                        StateEventKind::UpToDate,
+                    )))?;
                 } else {
                     unimplemented!()
                 }
@@ -111,11 +126,24 @@ impl Installer {
 
     pub fn all_repos<F>(&self, f: F) -> Result<()>
     where
-        F: Fn(&Self, &str, &Package) -> Result<()>,
+        F: Send + Copy + Fn(&Self, &str, &Package) -> Result<()>,
     {
-        for (remote_path, pkg) in &self.config.packages {
-            f(self, remote_path, pkg)?;
-        }
+        thread::scope(|s| {
+            for (remote_path, pkg) in &self.config.packages {
+                s.spawn(move |_| {
+                    if let Err(e) = f(self, remote_path, pkg) {
+                        self.sender.send(Message::StateEvent(StateEvent::new(
+                            remote_path,
+                            StateEventKind::Failed(e),
+                        )))?;
+                    }
+                    Ok::<(), anyhow::Error>(())
+                });
+            }
+        })
+        .unwrap();
+
+        self.sender.send(Message::Close)?;
 
         Ok(())
     }
