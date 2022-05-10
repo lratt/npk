@@ -312,6 +312,7 @@ dependencies = [
  "home",
  "serde",
  "serde_yaml",
+ "termcolor",
 ]
 
 [[package]]

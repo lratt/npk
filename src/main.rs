@@ -2,7 +2,8 @@
 
 use anyhow::Context;
 use installer::Installer;
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, io::Write, path::PathBuf};
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 #[macro_use]
 extern crate serde;
@@ -111,13 +112,30 @@ fn main() -> anyhow::Result<()> {
     let clear_screen = || print!("\x1B[2J\x1B[1;1H");
 
     let mut state: HashMap<String, StateEventKind> = HashMap::new();
-    let print_state = |map: &HashMap<String, StateEventKind>| {
-        clear_screen();
 
+    let print_state = |mut stdout: &mut StandardStream,
+                       map: &HashMap<String, StateEventKind>|
+     -> anyhow::Result<()> {
+        clear_screen();
         for (pkg, state) in map {
-            println!("{}: {}", pkg, state);
+            write!(&mut stdout, "{}: ", pkg)?;
+            match state {
+                StateEventKind::Updating | StateEventKind::Installing => {
+                    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Blue)))?;
+                }
+                StateEventKind::Installed | StateEventKind::Updated | StateEventKind::UpToDate => {
+                    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)))?;
+                }
+                StateEventKind::Failed(_) => {
+                    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?;
+                }
+            };
+            writeln!(&mut stdout, "{}", state)?;
+            stdout.set_color(ColorSpec::new().set_fg(None))?;
         }
+        Ok(())
     };
+    let mut stdout = StandardStream::stdout(ColorChoice::Always);
 
     loop {
         let event = r.recv()?;
@@ -127,7 +145,7 @@ fn main() -> anyhow::Result<()> {
             Message::StateEvent(event) => state.insert(event.name, event.kind),
         };
 
-        print_state(&state);
+        print_state(&mut stdout, &state)?;
     }
 
     Ok(())
