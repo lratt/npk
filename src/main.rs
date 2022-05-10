@@ -71,11 +71,17 @@ fn main() -> anyhow::Result<()> {
         .arg_required_else_help(true)
         .args(&[arg!(
             -c --config <CONFIG_FILE> "path to configuration file [default: $HOME/.config/npk.yml]"
-        ).allow_invalid_utf8(true).required(false)])
+        )
+        .allow_invalid_utf8(true)
+        .required(false)])
         .subcommands(vec![
-            clap::Command::new("install").about("installs all new packages").visible_alias("i")
+            clap::Command::new("install")
+                .about("installs all new packages")
+                .visible_alias("i")
                 .args(&[arg!(-u --upgrade "upgrade existing packages").required(false)]),
-            clap::Command::new("upgrade").about("updates all existing packages").visible_alias("u"),
+            clap::Command::new("upgrade")
+                .about("updates all existing packages")
+                .visible_alias("u"),
         ])
         .get_matches();
 
