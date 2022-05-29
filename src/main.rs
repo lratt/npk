@@ -44,6 +44,7 @@ pub enum StateEventKind {
     Updating,
     Updated,
     UpToDate,
+    Removed,
     Failed(anyhow::Error),
 }
 
@@ -58,6 +59,7 @@ impl std::fmt::Display for StateEventKind {
                 Self::Updating => "Updating".to_string(),
                 Self::Updated => "Updated".to_string(),
                 Self::UpToDate => "Up to date".to_string(),
+                Self::Removed => "Removed".to_string(),
                 Self::Failed(e) => format!("Error occured: {:?}", e),
             }
         )
@@ -83,6 +85,9 @@ fn main() -> anyhow::Result<()> {
             clap::Command::new("upgrade")
                 .about("updates all existing packages")
                 .visible_alias("u"),
+            clap::Command::new("clean")
+                .about("removes all unused packages")
+                .visible_alias("c"),
         ])
         .get_matches();
 
@@ -105,6 +110,9 @@ fn main() -> anyhow::Result<()> {
         if let Some(_upgrade) = matches.subcommand_matches("upgrade") {
             installer.all_repos(Installer::pull_repo)?;
         }
+        if let Some(_upgrade) = matches.subcommand_matches("clean") {
+            installer.remove_unused()?;
+        }
 
         Ok::<(), anyhow::Error>(())
     });
@@ -125,6 +133,9 @@ fn main() -> anyhow::Result<()> {
                 }
                 StateEventKind::Installed | StateEventKind::Updated | StateEventKind::UpToDate => {
                     stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)))?;
+                }
+                StateEventKind::Removed => {
+                    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))?;
                 }
                 StateEventKind::Failed(_) => {
                     stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?;

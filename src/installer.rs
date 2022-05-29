@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use crossbeam::channel::Sender;
 use crossbeam::thread;
+use std::ffi::OsString;
 use std::path::PathBuf;
 
 use crate::config::{Config, Package};
@@ -30,12 +31,57 @@ impl Installer {
     pub fn set_upgrade_during_install(&mut self, b: bool) {
         self.upgrade_during_install = b;
     }
+    pub fn remove_unused(&self) -> Result<()> {
+        let repo_dir_path = self.pack_dir.join(PKG_NAME).join("start");
+        if !repo_dir_path.exists() {
+            std::fs::create_dir_all(&repo_dir_path)?;
+        }
+        let repo_dir = repo_dir_path.read_dir()?;
+        thread::scope(move |s| {
+            for entry in repo_dir {
+                s.spawn(move |_| {
+                    let entry = entry.unwrap();
+                    let meta = entry.metadata().unwrap();
+                    let entry_name = entry.file_name();
+
+                    let f = || -> anyhow::Result<()> {
+                        if meta.is_dir()
+                            && !self.config.packages.iter().any(|(remote_path, cfg)| {
+                                OsString::from(cfg.get_package_dirname(remote_path)) == entry_name
+                            })
+                        {
+                            std::fs::remove_dir_all(&entry.path())?;
+                            self.sender.send(Message::StateEvent(StateEvent::new(
+                                &entry_name.to_string_lossy(),
+                                StateEventKind::Removed,
+                            )))?;
+                        }
+                        Ok(())
+                    };
+
+                    if let Err(e) = f() {
+                        self.sender.send(Message::StateEvent(StateEvent::new(
+                            &entry_name.to_string_lossy(),
+                            StateEventKind::Failed(e),
+                        )))?;
+                    }
+
+                    anyhow::Ok(())
+                });
+            }
+        })
+        .unwrap();
+
+        self.sender.send(Message::Close)?;
+
+        Ok(())
+    }
     pub fn clone_repo(&self, remote_path: &str, cfg: &Package) -> Result<()> {
-        let repo_path = self.pack_dir.join(PKG_NAME).join("start").join(
-            cfg.rename
-                .as_ref()
-                .unwrap_or(&remote_path.split('/').last().unwrap().to_string()),
-        );
+        let repo_path = self
+            .pack_dir
+            .join(PKG_NAME)
+            .join("start")
+            .join(cfg.get_package_dirname(remote_path));
         match git2::Repository::open(&repo_path) {
             Err(e) if e.code() == git2::ErrorCode::NotFound => {}
             Err(e) => return Err(e.into()),
@@ -70,11 +116,11 @@ impl Installer {
     }
 
     pub fn pull_repo(&self, remote_path: &str, cfg: &Package) -> Result<()> {
-        let repo_path = self.pack_dir.join(PKG_NAME).join("start").join(
-            cfg.rename
-                .as_ref()
-                .unwrap_or(&remote_path.split('/').last().unwrap().to_string()),
-        );
+        let repo_path = self
+            .pack_dir
+            .join(PKG_NAME)
+            .join("start")
+            .join(cfg.get_package_dirname(remote_path));
         let repo = match git2::Repository::open(&repo_path) {
             Err(e) if e.code() == git2::ErrorCode::NotFound => return Ok(()),
             Err(e) => return Err(e.into()),
