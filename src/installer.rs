@@ -46,7 +46,7 @@ impl Installer {
 
                     let f = || -> anyhow::Result<()> {
                         if meta.is_dir()
-                            && !self.config.packages.iter().any(|(remote_path, cfg)| {
+                            && self.config.packages.iter().any(|(remote_path, cfg)| {
                                 OsString::from(cfg.get_package_dirname(remote_path)) == entry_name
                             })
                         {
