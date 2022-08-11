@@ -1,8 +1,8 @@
 use anyhow::{Context, Result};
-use crossbeam::channel::Sender;
-use crossbeam::thread;
 use std::ffi::OsString;
 use std::path::PathBuf;
+use std::sync::mpsc;
+use std::thread;
 
 use crate::config::{Config, Package};
 use crate::{Message, StateEvent, StateEventKind, PKG_NAME};
@@ -12,11 +12,11 @@ pub struct Installer {
     config: Config,
     pack_dir: PathBuf,
     upgrade_during_install: bool,
-    sender: Sender<Message>,
+    sender: mpsc::SyncSender<Message>,
 }
 
 impl Installer {
-    pub fn new(config: Config, sender: Sender<Message>) -> Self {
+    pub fn new(config: Config, sender: mpsc::SyncSender<Message>) -> Self {
         let pack_dir = home::home_dir()
             .map(|d| d.join(".local/share/nvim/site/pack"))
             .unwrap();
@@ -39,7 +39,7 @@ impl Installer {
         let repo_dir = repo_dir_path.read_dir()?;
         thread::scope(move |s| {
             for entry in repo_dir {
-                s.spawn(move |_| {
+                s.spawn(move || {
                     let entry = entry.unwrap();
                     let meta = entry.metadata().unwrap();
                     let entry_name = entry.file_name();
@@ -69,8 +69,7 @@ impl Installer {
                     anyhow::Ok(())
                 });
             }
-        })
-        .unwrap();
+        });
 
         self.sender.send(Message::Close)?;
 
@@ -176,9 +175,10 @@ impl Installer {
     {
         thread::scope(|s| {
             for (remote_path, pkg) in &self.config.packages {
-                s.spawn(move |_| {
+                let sender = self.sender.clone();
+                s.spawn(move || {
                     if let Err(e) = f(self, remote_path, pkg) {
-                        self.sender.send(Message::StateEvent(StateEvent::new(
+                        sender.send(Message::StateEvent(StateEvent::new(
                             remote_path,
                             StateEventKind::Failed(e),
                         )))?;
@@ -186,8 +186,7 @@ impl Installer {
                     Ok::<(), anyhow::Error>(())
                 });
             }
-        })
-        .unwrap();
+        });
 
         self.sender.send(Message::Close)?;
 

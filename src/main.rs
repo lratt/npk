@@ -2,7 +2,7 @@
 
 use anyhow::Context;
 use installer::Installer;
-use std::{collections::HashMap, io::Write, path::PathBuf};
+use std::{collections::HashMap, io::Write, path::PathBuf, sync::mpsc};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 #[macro_use]
@@ -98,7 +98,7 @@ fn main() -> anyhow::Result<()> {
 
     let config = config::read(&config_path).context("failed to read config file")?;
 
-    let (s, r) = crossbeam::channel::unbounded::<Message>();
+    let (s, r) = mpsc::sync_channel::<Message>(8);
 
     std::thread::spawn(move || {
         let mut installer = Installer::new(config, s);
