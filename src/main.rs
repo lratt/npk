@@ -54,12 +54,12 @@ impl std::fmt::Display for StateEventKind {
             f,
             "{}",
             match &self {
-                Self::Installing => "Installing".to_string(),
-                Self::Installed => "Installed".to_string(),
-                Self::Updating => "Updating".to_string(),
-                Self::Updated => "Updated".to_string(),
-                Self::UpToDate => "Up to date".to_string(),
-                Self::Removed => "Removed".to_string(),
+                Self::Installing => "  Installing".to_string(),
+                Self::Installed => "   Installed".to_string(),
+                Self::Updating => "    Updating".to_string(),
+                Self::Updated => "     Updated".to_string(),
+                Self::UpToDate => "  Up to date".to_string(),
+                Self::Removed => "     Removed".to_string(),
                 Self::Failed(e) => format!("Error occured: {:?}", e),
             }
         )
@@ -126,7 +126,6 @@ fn main() -> anyhow::Result<()> {
      -> anyhow::Result<()> {
         clear_screen();
         for (pkg, state) in map {
-            write!(&mut stdout, "{}: ", pkg)?;
             match state {
                 StateEventKind::Updating | StateEventKind::Installing => {
                     stdout.set_color(ColorSpec::new().set_fg(Some(Color::Blue)))?;
@@ -141,8 +140,9 @@ fn main() -> anyhow::Result<()> {
                     stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?;
                 }
             };
-            writeln!(&mut stdout, "{}", state)?;
+            write!(&mut stdout, "{}", state)?;
             stdout.set_color(ColorSpec::new().set_fg(None))?;
+            writeln!(&mut stdout, " {}", pkg)?;
         }
         Ok(())
     };
